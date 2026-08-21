@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic
+ollama
+requests
+numpy
+sentence-transformers
+scikit-learn
