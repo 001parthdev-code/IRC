@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Triage</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f4f5;
+            color: #18181b;
+        }
+
+        .container {
+            width: min(900px, 92%);
+            margin: 50px auto;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #71717a;
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 180px;
+            padding: 16px;
+            border: 1px solid #d4d4d8;
+            border-radius: 10px;
+            resize: vertical;
+            font-size: 16px;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #18181b;
+        }
+
+        button {
+            margin-top: 12px;
+            padding: 12px 22px;
+            border: none;
+            border-radius: 8px;
+            background: #18181b;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 24px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e4e4e7;
+        }
+
+        .decision {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .automate {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .review {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .card {
+            padding: 16px;
+            background: #f4f4f5;
+            border-radius: 8px;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #71717a;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .reason {
+            margin-top: 20px;
+            padding: 16px;
+            background: #fafafa;
+            border-left: 3px solid #18181b;
+        }
+
+        .security {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .error {
+            color: #b91c1c;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Support Ticket Triage</h1>
+
+    <div class="subtitle">
+        AI-powered ticket classification and security review
+    </div>
+
+    <textarea
+        id="ticket"
+        placeholder="Enter a support ticket..."
+    ></textarea>
+
+    <button id="submit">Analyze Ticket</button>
+
+    <div id="error" class="error"></div>
+
+    <div id="result" class="result">
+
+        <div id="decision" class="decision"></div>
+
+        <div class="grid">
+
+            <div class="card">
+                <div class="label">CATEGORY</div>
+                <div id="category" class="value">-</div>
+            </div>
+
+            <div class="card">
+                <div class="label">EVIDENCE SCORE</div>
+                <div id="score" class="value">-</div>
+            </div>
+
+            <div class="card">
+                <div class="label">MARGIN</div>
+                <div id="margin" class="value">-</div>
+            </div>
+
+        </div>
+
+        <div class="reason">
+            <strong>Reason</strong>
+            <p id="reason"></p>
+        </div>
+
+        <div class="security">
+            <strong>Security Analysis</strong>
+
+            <p>
+                Risk Score:
+                <strong id="risk">-</strong>
+            </p>
+
+            <p>
+                Verdict:
+                <strong id="verdict">-</strong>
+            </p>
+
+            <p>
+                Rule Matches:
+                <strong id="rules">-</strong>
+            </p>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const ticketInput = document.getElementById("ticket");
+const submitButton = document.getElementById("submit");
+const result = document.getElementById("result");
+const error = document.getElementById("error");
+
+submitButton.addEventListener("click", analyzeTicket);
+
+async function analyzeTicket() {
+
+    const ticket = ticketInput.value.trim();
+
+    if (!ticket) {
+        error.textContent = "Please enter a support ticket.";
+        return;
+    }
+
+    error.textContent = "";
+    result.style.display = "none";
+    submitButton.disabled = true;
+    submitButton.textContent = "Analyzing...";
+
+    try {
+
+        const response = await fetch("http://127.0.0.1:8000/tickets", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                ticket: ticket
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(
+                `Server returned ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        document.getElementById("category").textContent =
+            data.category;
+
+        document.getElementById("score").textContent =
+            Number(data.evidence_score).toFixed(4);
+
+        document.getElementById("margin").textContent =
+            Number(data.margin).toFixed(4);
+
+        document.getElementById("reason").textContent =
+            data.reason;
+
+        document.getElementById("risk").textContent =
+            data.security.risk_score;
+
+        document.getElementById("verdict").textContent =
+            data.security.verdict;
+
+        document.getElementById("rules").textContent =
+            data.security.rule_matches.length
+                ? data.security.rule_matches.join(", ")
+                : "None";
+
+        const decisionElement =
+            document.getElementById("decision");
+
+        decisionElement.textContent =
+            data.decision === "automate"
+                ? "AUTOMATE"
+                : "MANUAL REVIEW";
+
+        decisionElement.className =
+            "decision " +
+            (data.decision === "automate"
+                ? "automate"
+                : "review");
+
+        result.style.display = "block";
+
+    } catch (err) {
+
+        error.textContent =
+            "Failed to analyze ticket: " + err.message;
+
+    } finally {
+
+        submitButton.disabled = false;
+        submitButton.textContent = "Analyze Ticket";
+
+    }
+}
+
+</script>
+
+</body>
+</html>
